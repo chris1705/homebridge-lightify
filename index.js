@@ -19,6 +19,7 @@ class LightifyPlatform {
    this.config = config;
    this.host = config['host']
    this.api = api;
+   this.accessories();
  }
 
  accessories(callback) {
@@ -34,7 +35,7 @@ class LightifyPlatform {
            return new LightifyAccessory(self.log, self.config, lightify, device, api);
          }
        });
-       callback(list);
+       //callback(list);
        this.api.registerPlatformAccessories('homebridge-hs100', 'Hs100', [platformAccessory]);
    });
  }
