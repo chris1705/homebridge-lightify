@@ -23,6 +23,8 @@ class LightifyPlatform {
 
  accessories(callback) {
    let self = this;
+   const platformAccessory = new Accessory(name, UUIDGen.generate(self.host), 5 /* Accessory.Categories.LIGHTBULB_TCTYPE */);
+
    lightify.start(host).then(function(data){
        return lightify.discovery();
    }).then(function(response) {
@@ -33,6 +35,7 @@ class LightifyPlatform {
          }
        });
        callback(list);
+       this.api.registerPlatformAccessories('homebridge-hs100', 'Hs100', [platformAccessory]);
    });
  }
 }
