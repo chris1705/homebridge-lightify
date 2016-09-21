@@ -15,7 +15,8 @@
     "lightify",
     "osram",
     "light",
-    "iot"
+    "iot",
+    "homebridge-plugin"
   ],
   "author": "Christian Fender",
   "license": "ISC",
@@ -26,5 +27,9 @@
   "dependencies": {
     "underscore": "~1.8.3",
     "node-lightify": "~0.0.6"
-  }
+  },
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
 }
