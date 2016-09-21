@@ -19,8 +19,12 @@ class LightifyPlatform {
    this.config = config;
    this.host = config['host']
    this.api = api;
-   this.init();
    this.accessories = []
+   try {
+     this.init();
+   } catch (e) {
+     this.log(e);
+   }
  }
 
  init(callback) {
