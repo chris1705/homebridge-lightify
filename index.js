@@ -32,9 +32,9 @@ class LightifyPlatform {
    }).then(function(response) {
        let list = _.map(response.result, (device) => {
          // We will only add lights
-         if(lightify.isLight(device['type'])) {
+         //if(lightify.isLight(device['type'])) {
            self.addAccessory(device);
-         }
+         //}
        });
        //callback(list);
        //this.api.registerPlatformAccessories('homebridge-lightify', 'Lightify', [platformAccessory]);
