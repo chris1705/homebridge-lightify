@@ -53,7 +53,7 @@ class LightifyAccessory {
     this.lightify = lightify;
     this.api = api;
     let self = this;
-    this.api.registerPlatformAccessories("homebridge-lightify", "LightifyPlatform", self.getServices());
+    this.api.registerPlatformAccessories("homebridge-lightify", "Lightify", self.getServices());
   }
 
   setOn(state, callback) {
