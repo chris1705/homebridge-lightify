@@ -15,6 +15,7 @@ module.exports = function(homebridge) {
 class LightifyPlatform {
 
  constructor(log, config, api) {
+   console.log("HELLO! ITS ME! LGIHTFY!!");
    this.log = log;
    this.config = config;
    this.host = config['host']
