@@ -14,10 +14,11 @@ module.exports = function(homebridge) {
 
 class LightifyPlatform {
 
- constructor(log, config) {
+ constructor(log, config, api) {
    this.log = log;
    this.config = config;
    this.host = config['host']
+   this.api = api;
  }
 
  accessories(callback) {
@@ -28,7 +29,7 @@ class LightifyPlatform {
        let list = _.map(response.result, (device) => {
          // We will only add lights
          if(lightify.isLight(device['type'])) {
-           return new LightifyAccessory(self.log, self.config, lightify, device);
+           return new LightifyAccessory(self.log, self.config, lightify, device, api);
          }
        });
        callback(list);
@@ -46,6 +47,9 @@ class LightifyAccessory {
     this.fw_version = device['firmware_version'];
     this.device = device;
     this.lightify = lightify;
+    this.api = api;
+    let self = this;
+    this.api.registerPlatformAccessories("homebridge-lightify", "LightifyPlatform", self.getServices());
   }
 
   setOn(state, callback) {
