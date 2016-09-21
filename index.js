@@ -37,7 +37,7 @@ class LightifyPlatform {
          }
        });
        //callback(list);
-       this.api.registerPlatformAccessories('homebridge-hs100', 'Hs100', [platformAccessory]);
+       //this.api.registerPlatformAccessories('homebridge-lightify', 'Lightify', [platformAccessory]);
    });
  }
 
@@ -46,7 +46,7 @@ class LightifyPlatform {
    let self = this;
    let uuid = UUIDGen.generate(device.name);
    let accessory = new Accessory(device.name, uuid);
-   accessory.addService(Service.Lightbulb, device.name);
+   accessory.addService(Service.Lightbulb, device.name)
    .getCharacteristic(Characteristic.On)
    .on('set', function(value, callback) {
      self.lightify.node_on_off(device.mac, value);
