@@ -6,9 +6,7 @@ var Service, Characteristic;
 
 
 
-class LightifyPlatform {
-
- constructor(log, config, api) {
+function LightifyPlatform(log, config, api) {
    console.log("HELLO! ITS ME! LGIHTFY!!");
    this.log = log;
    this.config = config;
@@ -22,7 +20,7 @@ class LightifyPlatform {
    }
  }
 
- init(callback) {
+ LightifyPlatform.prototype.init = function(callback) {
    this.log("hello");
    let self = this;
    const platformAccessory = new Accessory(name, UUIDGen.generate(self.host), 5 /* Accessory.Categories.LIGHTBULB_TCTYPE */);
@@ -43,7 +41,7 @@ class LightifyPlatform {
    });
  }
 
- addAccessory(device) {
+ LightifyPlatform.prototype.addAccessory = function(device) {
    this.log("Registration of:" , device);
    let self = this;
    let uuid = UUIDGen.generate(device.name);
