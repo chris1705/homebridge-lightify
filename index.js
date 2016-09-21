@@ -42,6 +42,7 @@ class LightifyPlatform {
  }
 
  addAccessory(device) {
+   this.log("Registration of:" , device);
    let self = this;
    let uuid = UUIDGen.generate(device.name);
    let accessory = new Accessory(device.name, uuid);
