@@ -3,13 +3,7 @@ var lightify = require('node-lightify'),
 
 var Service, Characteristic;
 
-module.exports = function(homebridge) {
 
-  Service = homebridge.hap.Service;
-  Characteristic = homebridge.hap.Characteristic;
-
-  homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
-}
 
 
 class LightifyPlatform {
@@ -112,4 +106,13 @@ class LightifyAccessory {
     return [informationService, lightbulbService];
   }
 
+}
+
+module.exports = function(homebridge) {
+  console.log("homebridge API version: " + homebridge.version);
+
+  Service = homebridge.hap.Service;
+  Characteristic = homebridge.hap.Characteristic;
+
+  homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
 }
