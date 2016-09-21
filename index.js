@@ -33,6 +33,7 @@ class LightifyPlatform {
        let list = _.map(response.result, (device) => {
          // We will only add lights
          //if(lightify.isLight(device['type'])) {
+         self.log(device);
            self.addAccessory(device);
          //}
        });
