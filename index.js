@@ -24,13 +24,14 @@ class LightifyPlatform {
  }
 
  init(callback) {
+   this.log("hello");
    let self = this;
    const platformAccessory = new Accessory(name, UUIDGen.generate(self.host), 5 /* Accessory.Categories.LIGHTBULB_TCTYPE */);
 
    lightify.start(host).then(function(data){
        return lightify.discovery();
    }).then(function(response) {
-     self.log(response);
+       self.log(response);
        let list = _.map(response.result, (device) => {
          // We will only add lights
          //if(lightify.isLight(device['type'])) {
