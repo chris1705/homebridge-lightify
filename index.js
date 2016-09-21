@@ -19,10 +19,11 @@ class LightifyPlatform {
    this.config = config;
    this.host = config['host']
    this.api = api;
-   this.accessories();
+   this.init();
+   this.accessories = []
  }
 
- accessories(callback) {
+ init(callback) {
    let self = this;
    const platformAccessory = new Accessory(name, UUIDGen.generate(self.host), 5 /* Accessory.Categories.LIGHTBULB_TCTYPE */);
 
@@ -32,12 +33,26 @@ class LightifyPlatform {
        let list = _.map(response.result, (device) => {
          // We will only add lights
          if(lightify.isLight(device['type'])) {
-           return new LightifyAccessory(self.log, self.config, lightify, device, api);
+           self.addAccessory(device);
          }
        });
        //callback(list);
        this.api.registerPlatformAccessories('homebridge-hs100', 'Hs100', [platformAccessory]);
    });
+ }
+
+ addAccessory(device) {
+   let self = this;
+   let uuid = UUIDGen.generate(device.name);
+   let accessory = new Accessory(device.name, uuid);
+   accessory.addService(Service.Lightbulb, device.name);
+   .getCharacteristic(Characteristic.On)
+   .on('set', function(value, callback) {
+     self.lightify.node_on_off(device.mac, value);
+    callback();
+    });
+    this.accessories.push(newAccessory);
+    this.api.registerPlatformAccessories("homebridge-lightify", "Lightify", [accessory]);
  }
 }
 
