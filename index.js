@@ -4,10 +4,9 @@ var lightify = require('node-lightify'),
 var Service, Characteristic;
 
 
-
-
 function LightifyPlatform(log, config, api) {
    console.log("HELLO! ITS ME! LGIHTFY!!");
+   log("HI");
    this.log = log;
    this.config = config;
    this.host = config['host']
@@ -55,7 +54,7 @@ function LightifyPlatform(log, config, api) {
     this.accessories.push(newAccessory);
     this.api.registerPlatformAccessories("homebridge-lightify", "Lightify", [accessory]);
  }
-}
+
 
 class LightifyAccessory {
 
@@ -112,5 +111,5 @@ module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
 
-  homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
+  homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform, true);
 }

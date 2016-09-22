@@ -1,4 +1,3 @@
 # homebridge-lightify
-# homebridge-lightify
-# homebridge-lightify
-# homebridge-lightify
+
+Plugin adding Osram Lightify support to homebridge
