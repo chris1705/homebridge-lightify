@@ -52,6 +52,18 @@ class LightifyPlug {
     this.mac = mac;
   }
 
+  isOnline(callback) {
+    let self = this;
+    lightify.start(this.host).then((data) => {
+      return lightify.discovery();
+    }).then((data) => {
+      let device = _.findWhere(data.result, {
+        "mac": self.mac
+      });
+      callback(null, device.online);
+    });
+  }
+
   setState(value, callback) {
     lightify.node_on_off(this.mac, value);
     callback();
@@ -81,7 +93,7 @@ class LightifyPlug {
 
     outletService.getCharacteristic(Characteristic.OutletInUse)
       .on('get', (a, b) => {
-        self.getState(a, b);
+        self.isOnline(a, b);
       });
 
     var service = new Service.AccessoryInformation();
@@ -122,6 +134,7 @@ class LightifyLamp extends LightifyPlug {
       .setCharacteristic(Characteristic.Model, "Lightify Lamp");
 
     var lightService = new Service.Lightbulb(this.name);
+    lightService.addCharacteristic(Characteristic.OutletInUse);
     lightService.getCharacteristic(Characteristic.On)
       .on('set', (a, b) => {
         self.setState(a, b);
@@ -135,6 +148,10 @@ class LightifyLamp extends LightifyPlug {
       })
       .on('get', (a, b) => {
         self.getBrightness(a, b);
+      });
+    lightService.getCharacteristic(Characteristic.OutletInUse)
+      .on('get', (a, b) => {
+        self.isOnline(a, b);
       });
 
     return [service, lightService];
