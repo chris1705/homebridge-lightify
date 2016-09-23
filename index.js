@@ -125,10 +125,6 @@ class LightifyPlug {
         self.getState(a, b);
       });
 
-    outletService.getCharacteristic(Characteristic.OutletInUse)
-      .on('get', (a, b) => {
-        self.isOnline(a, b);
-      });
 
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, this.name)
@@ -169,7 +165,6 @@ class LightifyLamp extends LightifyPlug {
       .setCharacteristic(Characteristic.Model, "Lightify Lamp");
 
     var lightService = new Service.Lightbulb(this.name);
-    lightService.addCharacteristic(Characteristic.OutletInUse);
     lightService.getCharacteristic(Characteristic.On)
       .on('set', (a, b) => {
         self.setState(a, b);
@@ -184,10 +179,7 @@ class LightifyLamp extends LightifyPlug {
       .on('get', (a, b) => {
         self.getBrightness(a, b);
       });
-    lightService.getCharacteristic(Characteristic.OutletInUse)
-      .on('get', (a, b) => {
-        self.isOnline(a, b);
-      });
+
 
     return [service, lightService];
   }
