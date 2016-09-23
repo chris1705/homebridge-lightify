@@ -90,8 +90,9 @@ class LightifyPlug {
       let device = _.findWhere(data.result, {
         "mac": self.mac
       });
-      callback(null, device.status === 1 || device.online === 1);
+      //callback(null, device.status === 1 || device.online === 1);
     });
+    callback(null, 1);
   }
 
   getServices() {
