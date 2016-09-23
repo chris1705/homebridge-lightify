@@ -140,8 +140,8 @@ class LightifyPlug {
 
 class LightifyLamp extends LightifyPlug {
 
-  constructor(name, uuid, mac, lighitfy) {
-    super(name, uuid, mac, lighitfy)
+  constructor(name, uuid, mac, lighitfy, platform) {
+    super(name, uuid, mac, lighitfy, platform)
   }
 
   setBrightness(value, callback) {
