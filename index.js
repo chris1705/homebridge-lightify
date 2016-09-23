@@ -27,9 +27,15 @@ class LightifyPlatform {
       return lightify.discovery();
     }).then((data) => {
       let accessories = _.map(data.result, (device) => {
-        return new LightifyPlug(device.name, UUIDGen.generate(
-          device.name), device.mac, this.lightify);
-
+        console.log(lightify);
+        if (lightify.isPlug(device.type)) {
+          return new LightifyPlug(device.name, UUIDGen.generate(
+            device.name), device.mac, this.lightify);
+        } 
+        else {
+          return new LightifyLamp(device.name, UUIDGen.generate(
+            device.name), device.mac, this.lightify);
+        }
       });
       callback(accessories);
     });
@@ -90,10 +96,7 @@ class LightifyPlug {
 class LightifyLamp extends LightifyPlug {
 
   constructor(name, uuid, mac, lighitfy) {
-    this.name = name;
-    this.uuid = uuid;
-    this.lightify = lightify;
-    this.mac = mac;
+    super(name, uuid, mac, lighitfy)
   }
 
   setBrightness(value, callback) {
