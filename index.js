@@ -22,13 +22,27 @@ class LightifyPlatform {
     this.api = api;
     this.host = config["host"];
     this.lightify = null;
+    this.lastDiscovery = null;
+    this.discoveryResult = [];
   }
 
-  debouncedDiscovery() {
-    this.getLightify().then((lightify) => {
-
+  getDevices() {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      if (this.lastDiscovery + 1000 < new Date().getTime()) {
+        self.getLightify().then((lightify) => {
+          lightify.discovery().then((data) => {
+            self.lastDiscovery = new Date().getTime();
+            self.discoveryResult = data.result;
+            resolve(self.discoveryResult);
+          });
+        });
+      } else {
+        resolve(self.discoveryResult);
+      }
     });
   }
+
 
   getLightify() {
     return new Promise((resolve, reject) => {
@@ -47,25 +61,22 @@ class LightifyPlatform {
 
   accessories(callback) {
     let self = this;
-    self.getLightify().then((lightify) => {
-      lightify.discovery().then((data) => {
-        let accessories = _.map(data.result, (device) => {
-          if (lightify.isPlug(device.type)) {
-            return new LightifyPlug(device.name, UUIDGen.generate(
-              device.name), device.mac, self.getLightify());
-          } 
-          else {
-            return new LightifyLamp(device.name, UUIDGen.generate(
-              device.name), device.mac, self.getLightify());
-          }
-        });
-        callback(accessories);
+    self.getDevices.then((devices) => {
+      let accessories = _.map(devices, (device) => {
+        if (lightify.isPlug(device.type)) {
+          return new LightifyPlug(device.name, UUIDGen.generate(
+            device.name), device.mac, self.getLightify());
+        } 
+        else {
+          return new LightifyLamp(device.name, UUIDGen.generate(
+            device.name), device.mac, self.getLightify());
+        }
       });
+      callback(accessories);
     });
   }
-
-
 }
+
 
 class LightifyPlug {
   constructor(name, uuid, mac, lighitfy) {
