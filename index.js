@@ -27,15 +27,12 @@ class LightifyPlatform {
       return lightify.discovery();
     }).then((data) => {
       let accessories = _.map(data.result, (device) => {
-        if (lighitfy.isPlug(device.type)) {
+        if (lightify.isPlug(device.type)) {
           return new LightifyPlug(device.name, UUIDGen.generate(
-              device.name),
-            device.mac, this.lightify);
-        } 
-        else {
+            device.name), device.mac, this.lightify);
+        } else {
           return new LightifyLamp(device.name, UUIDGen.generate(
-              device.name),
-            device.mac, this.lightify);
+            device.name), device.mac, this.lightify);
         }
       });
       callback(accessories);
