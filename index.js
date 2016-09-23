@@ -1,14 +1,15 @@
 var lightify = require('node-lightify'),
-           _ = require('underscore');
+  _ = require('underscore');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
 module.exports = function(homebridge) {
- Accessory = homebridge.platformAccessory;
- Service = homebridge.hap.Service;
- Characteristic = homebridge.hap.Characteristic;
- UUIDGen = homebridge.hap.uuid;
- homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
+  Accessory = homebridge.platformAccessory;
+  Service = homebridge.hap.Service;
+  Characteristic = homebridge.hap.Characteristic;
+  UUIDGen = homebridge.hap.uuid;
+  homebridge.registerPlatform("homebridge-lightify", "Lightify",
+    LightifyPlatform);
 }
 
 class LightifyPlatform {
@@ -26,15 +27,25 @@ class LightifyPlatform {
       return lightify.discovery();
     }).then((data) => {
       let accessories = _.map(data.result, (device) => {
-        return new LightifyLamp(device.name, UUIDGen.generate(device.name), device.mac, this.lightify);
+        if (lighitfy.isPlug(device.type)) {
+          return new LightifyPlug(device.name, UUIDGen.generate(
+              device.name),
+            device.mac, this.lightify);
+        } 
+        else {
+          return new LightifyLamp(device.name, UUIDGen.generate(
+              device.name),
+            device.mac, this.lightify);
+        }
       });
       callback(accessories);
     });
   }
+
+
 }
 
-class LightifyLamp {
-
+class LightifyPlug {
   constructor(name, uuid, mac, lighitfy) {
     this.name = name;
     this.uuid = uuid;
@@ -47,23 +58,62 @@ class LightifyLamp {
     callback();
   }
 
+  getState(callback) {
+    var self = this;
+    lightify.discovery().then((data) => {
+      let device = _.findWhere(data.result, {
+        "mac": self.mac
+      });
+      callback(null, device.status === 1 || device.online === 1);
+    });
+  }
+
+  getServices() {
+    let self = this;
+    var outletService = new Service.Outlet(this.name);
+
+    outletService.getCharacteristic(Characteristic.On)
+      .on('set', (a, b) => {
+        self.setState(a, b);
+      })
+      .on('get', (a, b) => {
+        self.getState(a, b);
+      });
+
+    outletService.getCharacteristic(Characteristic.OutletInUse)
+      .on('get', (a, b) => {
+        self.getState(a, b);
+      });
+
+    var service = new Service.AccessoryInformation();
+    service.setCharacteristic(Characteristic.Name, this.name)
+      .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
+      .setCharacteristic(Characteristic.Model, "Lightify Switch");
+    return [service, outletService];
+  }
+
+}
+
+class LightifyLamp extends LightifySwitch {
+
+  constructor(name, uuid, mac, lighitfy) {
+    this.name = name;
+    this.uuid = uuid;
+    this.lightify = lightify;
+    this.mac = mac;
+  }
+
   setBrightness(value, callback) {
     lightify.node_brightness(this.mac, value);
     callback();
   }
 
-  getState(callback) {
-    var self = this;
-    lightify.discovery().then((data) => {
-      let device = _.findWhere(data.result, {"mac": self.mac});
-      callback(null, device.status === 1 || device.online === 1);
-    });
-  }
-
   getBrightness(callback) {
     var self = this;
     lightify.discovery().then((data) => {
-      let device = _.findWhere(data.result, {"mac": self.mac});
+      let device = _.findWhere(data.result, {
+        "mac": self.mac
+      });
       callback(null, device.brightness);
     });
   }
@@ -72,16 +122,24 @@ class LightifyLamp {
     let self = this;
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, this.name)
-           .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
-           .setCharacteristic(Characteristic.Model, "Lightify");
+      .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
+      .setCharacteristic(Characteristic.Model, "Lightify Lamp");
 
     var lightService = new Service.Lightbulb(this.name);
     lightService.getCharacteristic(Characteristic.On)
-                .on('set', (a, b) => {self.setState(a, b); })
-                .on('get', (a, b) => {self.getState(a, b); });
+      .on('set', (a, b) => {
+        self.setState(a, b);
+      })
+      .on('get', (a, b) => {
+        self.getState(a, b);
+      });
     lightService.getCharacteristic(Characteristic.Brightness)
-                .on('set', (a, b) => {self.setBrightness(a, b); })
-                .on('get', (a, b) => {self.getBrightness(a, b); });
+      .on('set', (a, b) => {
+        self.setBrightness(a, b);
+      })
+      .on('get', (a, b) => {
+        self.getBrightness(a, b);
+      });
 
     return [service, lightService];
   }
