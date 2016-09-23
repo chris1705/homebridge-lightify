@@ -90,7 +90,7 @@ class LightifyPlug {
   isOnline(callback) {
     let self = this;
     lightify.discovery().then((data) => {
-      let device = _.findWhere(data.result, {
+      let device = _.findWhere(data, {
         "mac": self.mac
       });
       callback(null, device.online);
@@ -106,7 +106,7 @@ class LightifyPlug {
     var self = this;
     self.platform.getDevices().then((data) => {
       console.log("GOT devices, setting state");
-      let device = _.findWhere(data.result, {
+      let device = _.findWhere(data, {
         "mac": self.mac
       });
       callback(null, device.status === 1 || device.online === 1);
@@ -153,7 +153,7 @@ class LightifyLamp extends LightifyPlug {
   getBrightness(callback) {
     var self = this;
     self.platform.getDevices().then((data) => {
-      let device = _.findWhere(data.result, {
+      let device = _.findWhere(data, {
         "mac": self.mac
       });
       callback(null, device.brightness);
