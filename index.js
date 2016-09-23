@@ -105,6 +105,7 @@ class LightifyPlug {
   getState(callback) {
     var self = this;
     self.platform.getDevices().then((data) => {
+      console.log("GOT devices, setting state");
       let device = _.findWhere(data.result, {
         "mac": self.mac
       });
