@@ -61,7 +61,7 @@ class LightifyPlatform {
 
   accessories(callback) {
     let self = this;
-    self.getDevices.then((devices) => {
+    self.getDevices().then((devices) => {
       let accessories = _.map(devices, (device) => {
         if (lightify.isPlug(device.type)) {
           return new LightifyPlug(device.name, UUIDGen.generate(
