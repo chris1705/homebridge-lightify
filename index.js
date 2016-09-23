@@ -65,11 +65,11 @@ class LightifyPlatform {
       let accessories = _.map(devices, (device) => {
         if (lightify.isPlug(device.type)) {
           return new LightifyPlug(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify());
+            device.name), device.mac, self.getLightify(), self);
         } 
         else {
           return new LightifyLamp(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify());
+            device.name), device.mac, self.getLightify(), self);
         }
       });
       callback(accessories);
@@ -79,11 +79,12 @@ class LightifyPlatform {
 
 
 class LightifyPlug {
-  constructor(name, uuid, mac, lighitfy) {
+  constructor(name, uuid, mac, lighitfy, platform) {
     this.name = name;
     this.uuid = uuid;
     this.lightify = lightify;
     this.mac = mac;
+    this.platform = platform;
   }
 
   isOnline(callback) {
@@ -103,13 +104,12 @@ class LightifyPlug {
 
   getState(callback) {
     var self = this;
-    //lightify.discovery().then((data) => {
-    //  let device = _.findWhere(data.result, {
-    //"mac": self.mac
-    //  });
-    //callback(null, device.status === 1 || device.online === 1);
-    //});
-    callback(null, 1);
+    self.platform.getDevices().then((data) => {
+      let device = _.findWhere(data.result, {
+        "mac": self.mac
+      });
+      callback(null, device.status === 1 || device.online === 1);
+    });
   }
 
   getServices() {
@@ -150,13 +150,13 @@ class LightifyLamp extends LightifyPlug {
   }
 
   getBrightness(callback) {
-    //var self = this;
-    //lightify.discovery().then((data) => {
-    //  let device = _.findWhere(data.result, {
-    //    "mac": self.mac
-    //  });
-    //  callback(null, device.brightness);
-    //});
+    var self = this;
+    self.platform.getDevices().then((data) => {
+      let device = _.findWhere(data.result, {
+        "mac": self.mac
+      });
+      callback(null, device.brightness);
+    });
     callback(null, 100);
   }
 
