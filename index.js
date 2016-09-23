@@ -94,7 +94,7 @@ class LightifyPlug {
 
 }
 
-class LightifyLamp extends LightifySwitch {
+class LightifyLamp extends LightifyPlug {
 
   constructor(name, uuid, mac, lighitfy) {
     this.name = name;
