@@ -24,6 +24,12 @@ class LightifyPlatform {
     this.lightify = null;
   }
 
+  debouncedDiscovery() {
+    this.getLightify().then((lightify) => {
+
+    });
+  }
+
   getLightify() {
     return new Promise((resolve, reject) => {
       if (!this.lightify) {
@@ -86,12 +92,12 @@ class LightifyPlug {
 
   getState(callback) {
     var self = this;
-    lightify.discovery().then((data) => {
-      let device = _.findWhere(data.result, {
-        "mac": self.mac
-      });
+    //lightify.discovery().then((data) => {
+    //  let device = _.findWhere(data.result, {
+    "mac": self.mac
+      //  });
       //callback(null, device.status === 1 || device.online === 1);
-    });
+      //});
     callback(null, 1);
   }
 
@@ -133,13 +139,14 @@ class LightifyLamp extends LightifyPlug {
   }
 
   getBrightness(callback) {
-    var self = this;
-    lightify.discovery().then((data) => {
-      let device = _.findWhere(data.result, {
-        "mac": self.mac
-      });
-      callback(null, device.brightness);
-    });
+    //var self = this;
+    //lightify.discovery().then((data) => {
+    //  let device = _.findWhere(data.result, {
+    //    "mac": self.mac
+    //  });
+    //  callback(null, device.brightness);
+    //});
+    callback(null, 100);
   }
 
   getServices() {
