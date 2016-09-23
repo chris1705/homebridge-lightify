@@ -1,5 +1,7 @@
 var lightify = require('node-lightify'),
-  _ = require('underscore');
+  _ = require('underscore'),
+  Promise = require('promise');
+
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -19,22 +21,35 @@ class LightifyPlatform {
     this.config = config;
     this.api = api;
     this.host = config["host"];
+    this.lightify = null;
+  }
+
+  getLightify() {
+    return new Promise((resolve, reject) => {
+      if (!this.lightify) {
+        lightify.start(this.host).then((data) => {
+          this.lightify = lightify;
+          console.log("Created new lightify");
+          resolve(this.lightify);
+        });
+      } else {
+        console.log("Using existing lightify");
+        resolve(this.lightify);
+      }
+    });
   }
 
   accessories(callback) {
     let self = this;
-    lightify.start(this.host).then((data) => {
-      return lightify.discovery();
-    }).then((data) => {
+    self.getLightify().discovery().then((data) => {
       let accessories = _.map(data.result, (device) => {
-        console.log(lightify);
         if (lightify.isPlug(device.type)) {
           return new LightifyPlug(device.name, UUIDGen.generate(
-            device.name), device.mac, this.lightify);
+            device.name), device.mac, self.getLightify());
         } 
         else {
           return new LightifyLamp(device.name, UUIDGen.generate(
-            device.name), device.mac, this.lightify);
+            device.name), device.mac, self.getLightify());
         }
       });
       callback(accessories);
@@ -54,9 +69,7 @@ class LightifyPlug {
 
   isOnline(callback) {
     let self = this;
-    lightify.start(this.host).then((data) => {
-      return lightify.discovery();
-    }).then((data) => {
+    lightify.discovery().then((data) => {
       let device = _.findWhere(data.result, {
         "mac": self.mac
       });
