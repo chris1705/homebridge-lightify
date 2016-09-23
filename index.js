@@ -41,18 +41,20 @@ class LightifyPlatform {
 
   accessories(callback) {
     let self = this;
-    self.getLightify().discovery().then((data) => {
-      let accessories = _.map(data.result, (device) => {
-        if (lightify.isPlug(device.type)) {
-          return new LightifyPlug(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify());
-        } 
-        else {
-          return new LightifyLamp(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify());
-        }
+    self.getLightify().then((lightify) => {
+      lightify.discovery().then((data) => {
+        let accessories = _.map(data.result, (device) => {
+          if (lightify.isPlug(device.type)) {
+            return new LightifyPlug(device.name, UUIDGen.generate(
+              device.name), device.mac, self.getLightify());
+          } 
+          else {
+            return new LightifyLamp(device.name, UUIDGen.generate(
+              device.name), device.mac, self.getLightify());
+          }
+        });
+        callback(accessories);
       });
-      callback(accessories);
     });
   }
 
