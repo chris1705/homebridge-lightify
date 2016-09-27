@@ -29,15 +29,18 @@ class LightifyPlatform {
   getDevices() {
     let self = this;
     return new Promise((resolve, reject) => {
-      if (this.lastDiscovery + 1000 < new Date().getTime()) {
+      if (self.lastDiscovery === null || self.lastDiscovery + 1000 < new Date()
+        .getTime()) {
+        self.lastDiscovery = new Date().getTime();
+        console.log("Discovering..");
         self.getLightify().then((lightify) => {
           lightify.discovery().then((data) => {
-            self.lastDiscovery = new Date().getTime();
             self.discoveryResult = data.result;
             resolve(self.discoveryResult);
           });
         });
       } else {
+        console.log("Using cached discovery..");
         resolve(self.discoveryResult);
       }
     });
@@ -102,14 +105,16 @@ class LightifyPlug {
     callback();
   }
 
-  getState(callback) {
+  getState(cb) {
     var self = this;
+    console.log("Get state invoked for ", self.name);
     self.platform.getDevices().then((data) => {
-      console.log("GOT devices, setting state");
+      console.log("Fetched devices. Searching for ", self.name);
       let device = _.findWhere(data, {
-        "mac": self.mac
+        "name": self.name
       });
-      callback(null, device.status === 1 || device.online === 1);
+      console.log("Getting state of ", device);
+      cb(null, device.status);
     });
   }
 
