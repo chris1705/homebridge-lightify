@@ -19,7 +19,7 @@
     "homebridge-plugin"
   ],
   "author": "Christian Fender",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/chris1705/homebridge-lightify/issues"
   },
