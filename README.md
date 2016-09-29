@@ -9,7 +9,7 @@ Plugin adding Osram Lightify support to homebridge. It uses the proprietary prot
     ```
     {
         "platform": "Lightify",
-        "host": "192.168.1.3",
+        "host": "192.168.1.3"
     }
     ```
 3. Restart homebridge
