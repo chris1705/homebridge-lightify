@@ -41,7 +41,6 @@ class LightifyPlatform {
           });
         });
       } else {
-        console.log("Using cached discovery..");
         resolve(self.discoveryResult);
       }
     });
@@ -105,7 +104,7 @@ class LightifyPlug {
   }
 
   getState(callback) {
-    self = this;
+    let self = this;
     this.platform.getDevices().then((data) => {
       let device = _.findWhere(data, {
         "name": self.name
@@ -119,15 +118,14 @@ class LightifyPlug {
     var outletService = new Service.Outlet(this.name);
 
     outletService.getCharacteristic(Characteristic.On)
-                 .on('set', this.setState.bindTo(this))
-                 .on('get', this.getState.bindTo(this));
+                 .on('set', this.setState.bind(this))
+                 .on('get', this.getState.bind(this));
 
     var service = new Service.AccessoryInformation();
 
     service.setCharacteristic(Characteristic.Name, this.name)
            .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
            .setCharacteristic(Characteristic.Model, "Lightify Switch");
-
     return [service, outletService];
   }
 
@@ -164,13 +162,12 @@ class LightifyLamp extends LightifyPlug {
     var lightService = new Service.Lightbulb(this.name);
 
     lightService.getCharacteristic(Characteristic.On)
-                .on('set', this.setState(a, b).bindTo(this))
-                .on('get', this.getState(a, b).bindTo(this));
+                .on('set', this.setState.bind(this))
+                .on('get', this.getState.bind(this));
 
     lightService.getCharacteristic(Characteristic.Brightness)
-                .on('set', this.setBrightness.bindTo(this))
-                .on('get', this.getBrightness.bindTo(this))
-
+                .on('set', this.setBrightness.bind(this))
+                .on('get', this.getBrightness.bind(this))
     return [service, lightService];
   }
 }
