@@ -1,17 +1,15 @@
 var lightify = require('node-lightify'),
-  _ = require('underscore'),
-  Promise = require('promise');
-
+    _        = require('underscore'),
+    Promise  = require('promise');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
 module.exports = function(homebridge) {
-  Accessory = homebridge.platformAccessory;
-  Service = homebridge.hap.Service;
+  Accessory      = homebridge.platformAccessory;
+  Service        = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  UUIDGen = homebridge.hap.uuid;
-  homebridge.registerPlatform("homebridge-lightify", "Lightify",
-    LightifyPlatform);
+  UUIDGen        = homebridge.hap.uuid;
+  homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
 }
 
 class LightifyPlatform {
@@ -26,13 +24,16 @@ class LightifyPlatform {
     this.discoveryResult = [];
   }
 
+  /**
+   * Method fetches all available devices. It caches the result for a second so its safe
+   * to request devices multiple times.
+   */
   getDevices() {
     let self = this;
     return new Promise((resolve, reject) => {
       if (self.lastDiscovery === null || self.lastDiscovery + 1000 < new Date()
         .getTime()) {
         self.lastDiscovery = new Date().getTime();
-        console.log("Discovering..");
         self.getLightify().then((lightify) => {
           lightify.discovery().then((data) => {
             self.discoveryResult = data.result;
@@ -40,23 +41,22 @@ class LightifyPlatform {
           });
         });
       } else {
-        console.log("Using cached discovery..");
         resolve(self.discoveryResult);
       }
     });
   }
 
-
+  /**
+   * Returns a connected lightify instance (singleton)
+   */
   getLightify() {
     return new Promise((resolve, reject) => {
       if (!this.lightify) {
         lightify.start(this.host).then((data) => {
           this.lightify = lightify;
-          console.log("Created new lightify");
           resolve(this.lightify);
         });
       } else {
-        console.log("Using existing lightify");
         resolve(this.lightify);
       }
     });
@@ -67,12 +67,9 @@ class LightifyPlatform {
     self.getDevices().then((devices) => {
       let accessories = _.map(devices, (device) => {
         if (lightify.isPlug(device.type)) {
-          return new LightifyPlug(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify(), self);
-        } 
-        else {
-          return new LightifyLamp(device.name, UUIDGen.generate(
-            device.name), device.mac, self.getLightify(), self);
+          return new LightifyPlug(device.name, UUIDGen.generate(device.name), device.mac, self.getLightify(), self);
+        } else {
+          return new LightifyLamp(device.name, UUIDGen.generate(device.name), device.mac, self.getLightify(), self);
         }
       });
       callback(accessories);
@@ -82,6 +79,7 @@ class LightifyPlatform {
 
 
 class LightifyPlug {
+
   constructor(name, uuid, mac, lighitfy, platform) {
     this.name = name;
     this.uuid = uuid;
@@ -105,16 +103,13 @@ class LightifyPlug {
     callback();
   }
 
-  getState(cb) {
-    var self = this;
-    console.log("Get state invoked for ", self.name);
-    self.platform.getDevices().then((data) => {
-      console.log("Fetched devices. Searching for ", self.name);
+  getState(callback) {
+    let self = this;
+    this.platform.getDevices().then((data) => {
       let device = _.findWhere(data, {
         "name": self.name
       });
-      console.log("Getting state of ", device);
-      cb(null, device.status);
+      callback(null, device.status);
     });
   }
 
@@ -123,18 +118,14 @@ class LightifyPlug {
     var outletService = new Service.Outlet(this.name);
 
     outletService.getCharacteristic(Characteristic.On)
-      .on('set', (a, b) => {
-        self.setState(a, b);
-      })
-      .on('get', (a, b) => {
-        self.getState(a, b);
-      });
-
+                 .on('set', this.setState.bind(this))
+                 .on('get', this.getState.bind(this));
 
     var service = new Service.AccessoryInformation();
+
     service.setCharacteristic(Characteristic.Name, this.name)
-      .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
-      .setCharacteristic(Characteristic.Model, "Lightify Switch");
+           .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
+           .setCharacteristic(Characteristic.Model, "Lightify Switch");
     return [service, outletService];
   }
 
@@ -159,33 +150,24 @@ class LightifyLamp extends LightifyPlug {
       });
       callback(null, device.brightness);
     });
-    callback(null, 100);
   }
 
   getServices() {
     let self = this;
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, this.name)
-      .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
-      .setCharacteristic(Characteristic.Model, "Lightify Lamp");
+           .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
+           .setCharacteristic(Characteristic.Model, "Lightify Lamp");
 
     var lightService = new Service.Lightbulb(this.name);
+
     lightService.getCharacteristic(Characteristic.On)
-      .on('set', (a, b) => {
-        self.setState(a, b);
-      })
-      .on('get', (a, b) => {
-        self.getState(a, b);
-      });
+                .on('set', this.setState.bind(this))
+                .on('get', this.getState.bind(this));
+
     lightService.getCharacteristic(Characteristic.Brightness)
-      .on('set', (a, b) => {
-        self.setBrightness(a, b);
-      })
-      .on('get', (a, b) => {
-        self.getBrightness(a, b);
-      });
-
-
+                .on('set', this.setBrightness.bind(this))
+                .on('get', this.getBrightness.bind(this))
     return [service, lightService];
   }
 }
