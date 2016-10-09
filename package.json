@@ -25,6 +25,8 @@
   },
   "homepage": "https://github.com/chris1705/homebridge-lightify#readme",
   "dependencies": {
+    "color-convert": "~1.5.0",
+    "color-temperature": "~0.2.7",
     "underscore": "~1.8.3",
     "node-lightify": "~0.0.6"
   },
