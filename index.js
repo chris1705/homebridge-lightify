@@ -51,8 +51,13 @@ class LightifyPlatform {
    */
   getLightify() {
     return new Promise((resolve, reject) => {
+      let errorHandler = function(error) {
+        this.lightify = null;
+        this.log("Connection failed, reason: ", error);
+        reject("Connection failed: ", error);
+      }
       if (!this.lightify) {
-        lightify.start(this.host).then((data) => {
+        lightify.start(this.host, errorHandler).then((data) => {
           this.lightify = lightify;
           resolve(this.lightify);
         });
@@ -73,6 +78,8 @@ class LightifyPlatform {
         }
       });
       callback(accessories);
+    }).catch(() => {
+      this.accessories(callback);
     });
   }
 }
@@ -95,12 +102,18 @@ class LightifyPlug {
         "mac": self.mac
       });
       callback(null, device.online);
+    }).catch(() => {
+      this.isOnline(callback);
     });
   }
 
   setState(value, callback) {
-    lightify.node_on_off(this.mac, value);
-    callback();
+    this.platform.getLightify().then((lightify) => {
+      lighitfy.node_on_off(this.mac, value);
+      callback();
+    }).catch(() => {
+      setState(value, callback, try + 1);
+    });
   }
 
   getState(callback) {

@@ -26,7 +26,7 @@
   "homepage": "https://github.com/chris1705/homebridge-lightify#readme",
   "dependencies": {
     "underscore": "~1.8.3",
-    "node-lightify": "~0.0.6"
+    "node-lightify": "chris1705/node-lightify#v1.0.1"
   },
   "engines": {
     "node": ">=6.0.0",
