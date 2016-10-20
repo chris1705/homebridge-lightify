@@ -109,7 +109,7 @@ class LightifyPlug {
       let device = _.findWhere(data, {
         "name": self.name
       });
-      callback(null, device.status);
+      callback(null, device.online && device.status);
     });
   }
 
