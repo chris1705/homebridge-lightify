@@ -1,6 +1,10 @@
+/* jshint esversion: 6 */
+
 var lightify = require('node-lightify'),
     _        = require('underscore'),
-    Promise  = require('promise');
+    Promise  = require('promise'),
+    colorconv = require('color-convert'),
+    colortemp = require('color-temperature');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -10,7 +14,7 @@ module.exports = function(homebridge) {
   Characteristic = homebridge.hap.Characteristic;
   UUIDGen        = homebridge.hap.uuid;
   homebridge.registerPlatform("homebridge-lightify", "Lightify", LightifyPlatform);
-}
+};
 
 class LightifyPlatform {
 
@@ -18,7 +22,7 @@ class LightifyPlatform {
     this.log = log;
     this.config = config;
     this.api = api;
-    this.host = config["host"];
+    this.host = config.host;
     this.lightify = null;
     this.lastDiscovery = null;
     this.discoveryResult = [];
@@ -28,11 +32,10 @@ class LightifyPlatform {
    * Method fetches all available devices. It caches the result for a second so its safe
    * to request devices multiple times.
    */
-  getDevices() {
+  getDevices(flushP) {
     let self = this;
-    return new Promise((resolve, reject) => {
-      if (self.lastDiscovery === null || self.lastDiscovery + 1000 < new Date()
-        .getTime()) {
+    return new Promise((resolve, reject) => {/* jshint unused: false */
+      if (flushP || self.lastDiscovery === null || self.lastDiscovery + 1000 < new Date().getTime()) {
         self.lastDiscovery = new Date().getTime();
         self.getLightify().then((lightify) => {
           lightify.discovery().then((data) => {
@@ -50,9 +53,9 @@ class LightifyPlatform {
    * Returns a connected lightify instance (singleton)
    */
   getLightify() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {/* jshint unused: false */
       if (!this.lightify) {
-        lightify.start(this.host).then((data) => {
+        lightify.start(this.host).then((data) => {/* jshint unused: false */
           this.lightify = lightify;
           resolve(this.lightify);
         });
@@ -66,10 +69,13 @@ class LightifyPlatform {
     let self = this;
     self.getDevices().then((devices) => {
       let accessories = _.map(devices, (device) => {
+        device.name = device.name || device.id;
         if (lightify.isPlug(device.type)) {
-          return new LightifyPlug(device.name, UUIDGen.generate(device.name), device.mac, self.getLightify(), self);
+          return new LightifyPlug(device.name, UUIDGen.generate(device.name), device, device.mac, self.getLightify(), self);
+        } else if (lightify.isLight(device.type)) {
+          return new LightifyLamp(device.name, UUIDGen.generate(device.name), device, device.mac, self.getLightify(), self);
         } else {
-          return new LightifyLamp(device.name, UUIDGen.generate(device.name), device.mac, self.getLightify(), self);
+          self.log.warn('unknown Lightify device type: ' + device.type);
         }
       });
       callback(accessories);
@@ -80,12 +86,36 @@ class LightifyPlatform {
 
 class LightifyPlug {
 
-  constructor(name, uuid, mac, lighitfy, platform) {
+  constructor(name, uuid, props, mac, lightify, platform) {
     this.name = name;
     this.uuid = uuid;
     this.lightify = lightify;
+    this.props = props;
     this.mac = mac;
     this.platform = platform;
+  }
+
+  flush(callback) {
+    var self = this;
+    setTimeout(() => {
+      self.platform.getDevices(true).then((data) => {
+        let device = _.findWhere(data, {
+          "mac": self.mac
+        });
+        if (callback) return callback(device);  // child handles everything
+        self.update.bind(self)(device);
+        self.refresh.bind(self)();
+      });
+    }, 250);
+  }
+
+  update(properties) {
+    if (properties) _.extend(this.props, properties);
+  }
+
+  refresh() {
+    var lightService = new Service.Lightbulb(this.name);
+    lightService.getCharacteristic(Characteristic.On).updateValue(this.props.status);
   }
 
   isOnline(callback) {
@@ -98,9 +128,13 @@ class LightifyPlug {
     });
   }
 
+// would prefer to invoke the child's `refresh`, but this looks easiest...
   setState(value, callback) {
+    this.props.status = value;
     lightify.node_on_off(this.mac, value);
-    callback();
+
+    // not invoked by child
+    if (callback) callback();
   }
 
   getState(callback) {
@@ -109,12 +143,12 @@ class LightifyPlug {
       let device = _.findWhere(data, {
         "name": self.name
       });
+      self.update.bind(self)(device);
       callback(null, device.online && device.status);
     });
   }
 
   getServices() {
-    let self = this;
     var outletService = new Service.Outlet(this.name);
 
     outletService.getCharacteristic(Characteristic.On)
@@ -126,6 +160,7 @@ class LightifyPlug {
     service.setCharacteristic(Characteristic.Name, this.name)
            .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
            .setCharacteristic(Characteristic.Model, "Lightify Switch");
+    this.flush();
     return [service, outletService];
   }
 
@@ -133,12 +168,60 @@ class LightifyPlug {
 
 class LightifyLamp extends LightifyPlug {
 
-  constructor(name, uuid, mac, lighitfy, platform) {
-    super(name, uuid, mac, lighitfy, platform)
+  constructor(name, uuid, props, mac, lightify, platform) {
+    super(name, uuid, props, mac, lightify, platform);
+  }
+
+  flush(callback) {
+    var self = this;
+    super.flush((device) => {
+      if (callback) return callback(device);  // (future) child handles everything
+      self.update.bind(self)(device);
+      self.refresh.bind(self)();
+    });
+  }
+
+  update(properties) {
+    var rgb;
+
+    super.update(properties);
+    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      rgb = colortemp.colorTemperature2rgb(this.props.temperature);
+      this.props.rgb = [ rgb.red, rgb.green, rgb.blue ];
+      this.props.hsv = colorconv.rgb.hsv(this.props.rgb);
+    }
+  }
+
+  refresh() {
+    var lightService = new Service.Lightbulb(this.name);
+
+    super.refresh();
+    if (lightify.isBrightnessSupported(this.props.type)) {
+      lightService.getCharacteristic(Characteristic.Brightness).updateValue(this.props.brightness);
+    }
+    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      lightService.getCharacteristic(Characteristic.Hue).updateValue(this.props.hsv[0]);
+      lightService.getCharacteristic(Characteristic.Saturation).updateValue(this.props.hsv[1]);
+    }
+  }
+
+  setState(value, callback) {
+    super.setState(value);
+    // not invoked by (future) child
+    if (callback) {
+      if (value) this.flush();
+      callback();
+    }
   }
 
   setBrightness(value, callback) {
     lightify.node_brightness(this.mac, value);
+    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      this.flush();
+    }
     callback();
   }
 
@@ -148,12 +231,72 @@ class LightifyLamp extends LightifyPlug {
       let device = _.findWhere(data, {
         "mac": self.mac
       });
-      callback(null, device.brightness);
+      self.update.bind(self)(device);
+      callback(null, this.props.brightness);
+    });
+  }
+
+// courtesy of https://dsp.stackexchange.com/questions/8949/how-do-i-calculate-the-color-temperature-of-the-light-source-illuminating-an-ima#answer-8968
+  setK() {
+    var xyz = colorconv.hsv.xyz(this.props.hsv);
+    var X = xyz[0];
+    var Y = xyz[1];
+    var Z = xyz[2];
+    var x = X / (X + Y + Z);
+    var y = Y / (X + Y + Z);
+    var n = (x - 0.3320) / (0.1858 - y);
+    var CCT = Math.round((449 * Math.pow(n, 3)) + (3525 * Math.pow(n, 2)) + (6823.3 * n) + 5520.33);
+
+    // it would be nice if zigbee bulbs would report the range, so we could adjust as needed...
+    this.props.temperature = (CCT < 2700) ? 2700 : (5000 < CCT) ? 5000 : CCT;
+    lightify.node_temperature(this.mac, this.props.temperature);
+    this.flush();
+  }
+
+// TBD: see if we can debounce setHue/setSaturation, since they are most certainly called in pairs
+  setHue(value, callback) {
+    this.props.hsv[0] = value;
+
+    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      this.setTemperature();
+    }
+    callback();
+  }
+
+  getHue(callback) {
+    var self = this;
+    self.platform.getDevices().then((data) => {
+      let device = _.findWhere(data, {
+        "mac": self.mac
+      });
+      self.update.bind(self)(device);
+      callback(null, self.props.hsv[0]);
+    });
+  }
+
+  setSaturation(value, callback) {
+    this.props.hsv[1] = value;
+
+    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      this.setTemperature();
+    }
+    callback();
+  }
+
+  getSaturation(callback) {
+    var self = this;
+    self.platform.getDevices().then((data) => {
+      let device = _.findWhere(data, {
+        "mac": self.mac
+      });
+      self.update.bind(self)(device);
+      callback(null, self.props.hsv[1]);
     });
   }
 
   getServices() {
-    let self = this;
     var service = new Service.AccessoryInformation();
     service.setCharacteristic(Characteristic.Name, this.name)
            .setCharacteristic(Characteristic.Manufacturer, "OSRAM Licht AG")
@@ -165,9 +308,24 @@ class LightifyLamp extends LightifyPlug {
                 .on('set', this.setState.bind(this))
                 .on('get', this.getState.bind(this));
 
-    lightService.getCharacteristic(Characteristic.Brightness)
-                .on('set', this.setBrightness.bind(this))
-                .on('get', this.getBrightness.bind(this))
+    if (lightify.isBrightnessSupported(this.props.type)) {
+      lightService.getCharacteristic(Characteristic.Brightness)
+                  .on('set', this.setBrightness.bind(this))
+                  .on('get', this.getBrightness.bind(this));
+    }
+    if (lightify.isColorSupported(this.props.type)) {
+      this.platform.log.err('color bulbs not yet implemented!');
+    } else if (lightify.isTemperatureSupported(this.props.type)) {
+      lightService.getCharacteristic(Characteristic.Hue)
+                  .on('set', this.setHue.bind(this))
+                  .on('get', this.getHue.bind(this));
+      lightService.getCharacteristic(Characteristic.Saturation)
+                  .on('set', this.setSaturation.bind(this))
+                  .on('get', this.getSaturation.bind(this));
+      this.setTemperature = _.debounce(this.setK, 250);
+    }
+    this.flush();
+
     return [service, lightService];
   }
 }
