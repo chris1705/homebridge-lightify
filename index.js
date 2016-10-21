@@ -144,7 +144,7 @@ class LightifyPlug {
         "name": self.name
       });
       self.update.bind(self)(device);
-      callback(null, device.status);
+      callback(null, device.online && device.status);
     });
   }
 
