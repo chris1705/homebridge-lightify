@@ -16,4 +16,7 @@ Plugin adding Osram Lightify support to homebridge. It uses the proprietary prot
 4. Enjoy!
 
 ## Supported Devices
-Currently it should be possible to control all Lightify lamps (turn on/off, adjust brightness) and the [Lightify Plug](http://amzn.to/2d9vKQM). Setting the color isn't supported yet.
+Currently all Lightify Lamps should be compatible (turn on/off, adjust brightness). I've tested it with the following devices:
+* [OSRAM LIGHTIFY Classic A](http://amzn.to/2kKiUO4)
+* [OSRAM LIGHTIFY Plug](http://amzn.to/2kjc813)
+* [OSRAM LIGHTIFY Surface](http://amzn.to/2kj8K60)
