@@ -185,10 +185,13 @@ class LightifyLamp extends LightifyPlug {
     var rgb;
 
     super.update(properties);
-    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
-      rgb = colortemp.colorTemperature2rgb(this.props.temperature);
-      this.props.rgb = [ rgb.red, rgb.green, rgb.blue ];
+    if (lightify.isTemperatureSupported(this.props.type)) {
+      if (lightify.isColorSupported(this.props.type)) {
+        this.props.rgb = [ this.props.red, this.props.green, this.props.blue ];
+      } else {
+        rgb = colortemp.colorTemperature2rgb(this.props.temperature);
+        this.props.rgb = [ rgb.red, rgb.green, rgb.blue ];
+      }
       this.props.hsv = colorconv.rgb.hsv(this.props.rgb);
     }
   }
@@ -200,8 +203,7 @@ class LightifyLamp extends LightifyPlug {
     if (lightify.isBrightnessSupported(this.props.type)) {
       lightService.getCharacteristic(Characteristic.Brightness).updateValue(this.props.brightness);
     }
-    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
+    if (lightify.isTemperatureSupported(this.props.type)) {
       lightService.getCharacteristic(Characteristic.Hue).updateValue(this.props.hsv[0]);
       lightService.getCharacteristic(Characteristic.Saturation).updateValue(this.props.hsv[1]);
     }
@@ -218,8 +220,7 @@ class LightifyLamp extends LightifyPlug {
 
   setBrightness(value, callback) {
     lightify.node_brightness(this.mac, value);
-    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
+    if (lightify.isTemperatureSupported(this.props.type)) {
       this.flush();
     }
     callback();
@@ -238,7 +239,7 @@ class LightifyLamp extends LightifyPlug {
 
 // courtesy of https://dsp.stackexchange.com/questions/8949/how-do-i-calculate-the-color-temperature-of-the-light-source-illuminating-an-ima#answer-8968
   setK() {
-    var xyz = colorconv.hsv.xyz(this.props.hsv);
+    var xyz = colorconv.hsv.xyz(this.props.newhsv);
     var X = xyz[0];
     var Y = xyz[1];
     var Z = xyz[2];
@@ -253,13 +254,22 @@ class LightifyLamp extends LightifyPlug {
     this.flush();
   }
 
-// TBD: see if we can debounce setHue/setSaturation, since they are most certainly called in pairs
-  setHue(value, callback) {
-    this.props.hsv[0] = value;
+  setRGB() {
+    var rgb = colorconv.hsv.rgb(this.props.newhsv);
 
-    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
-      this.setTemperature();
+    this.props.red = rgb[0];
+    this.props.green = rgb[1];
+    this.props.blue = rgb[2];
+    lightify.node_color(this.mac, this.props.red, this.props.green, this.props.blue, 255);
+    this.flush();
+  }
+
+  setHue(value, callback) {
+    if (!this.props.newhsv) this.props.newhsv = _.clone(this.props.hsv || [ 0, 0, 100 ]);
+    this.props.newhsv[0] = value;
+
+    if (lightify.isTemperatureSupported(this.props.type)) {
+      this.setColor();
     }
     callback();
   }
@@ -276,11 +286,11 @@ class LightifyLamp extends LightifyPlug {
   }
 
   setSaturation(value, callback) {
-    this.props.hsv[1] = value;
+    if (!this.props.newhsv) this.props.newhsv = _.clone(this.props.hsv || [ 0, 0, 100 ]);
+    this.props.newhsv[1] = value;
 
-    if (lightify.isColorSupported(this.props.type)) {// TBD: for the future...
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
-      this.setTemperature();
+    if (lightify.isTemperatureSupported(this.props.type)) {
+      this.setColor();
     }
     callback();
   }
@@ -313,16 +323,18 @@ class LightifyLamp extends LightifyPlug {
                   .on('set', this.setBrightness.bind(this))
                   .on('get', this.getBrightness.bind(this));
     }
-    if (lightify.isColorSupported(this.props.type)) {
-      this.platform.log.err('color bulbs not yet implemented!');
-    } else if (lightify.isTemperatureSupported(this.props.type)) {
+    if (lightify.isTemperatureSupported(this.props.type)) {
       lightService.getCharacteristic(Characteristic.Hue)
                   .on('set', this.setHue.bind(this))
                   .on('get', this.getHue.bind(this));
       lightService.getCharacteristic(Characteristic.Saturation)
                   .on('set', this.setSaturation.bind(this))
                   .on('get', this.getSaturation.bind(this));
-      this.setTemperature = _.debounce(this.setK, 250);
+      if (lightify.isColorSupported(this.props.type)) {
+        this.setColor = _.debounce(this.setRGB, 250);
+      } else {
+        this.setColor = _.debounce(this.setK, 250);
+      }
     }
     this.flush();
 
