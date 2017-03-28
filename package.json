@@ -1,6 +1,6 @@
 {
   "name": "homebridge-lightify",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "Homebridge plugin providing access to OSRAM Lightify products",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "color-convert": "~1.5.0",
     "color-temperature": "~0.2.7",
     "underscore": "~1.8.3",
-    "node-lightify": "homespun/node-lightify"
+    "node-lightify": "chris1705/node-lightify"
   },
   "engines": {
     "node": ">=6.0.0",
