@@ -141,7 +141,7 @@ class LightifyPlug {
     let self = this;
     this.platform.getDevices().then((data) => {
       let device = _.findWhere(data, {
-        "name": self.name
+        "mac": self.mac
       });
       self.update.bind(self)(device);
       callback(null, device.online && device.status);
